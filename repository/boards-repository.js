@@ -1,4 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
+var players = require('./players-repository')
 var dotenv = require('dotenv');
 dotenv.config()
 
@@ -14,7 +15,7 @@ var connect = async () => {
     })
 }
 
-var getBoards = async () => {
+var get_boards = async () => {
     var boards = []
     client = await connect()
     if (!client) {
@@ -32,7 +33,7 @@ var getBoards = async () => {
     return boards
 }
 
-var getBoardById = async (id) => {
+var get_board = async (id) => {
     let board_id = parseInt(id, 10)
     var board 
     client = await connect()
@@ -42,9 +43,7 @@ var getBoardById = async (id) => {
     try {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        board = await collection.findOne({id: board_id}).then(result => {
-            return result   
-        })
+        board = await collection.findOne({id: board_id})
     } catch (err) {
         console.log(err)
     } finally {
@@ -53,16 +52,71 @@ var getBoardById = async (id) => {
     return board
 }
 
-var createBoard = async (id) => {
+var create_board = async (id) => {
     var board
+    var player = await players.get_player(id)
     client = await connect()
-    var player = await getPlayer(player_id)
+    if (!client) {
+        return board
+    }
+    try {
+        const db = client.db(db_name)
+        let collection = db.collection(collection_name)
+        board = {
+            "id": 01,
+			"table_board": ["", "", "X", "", "X", "", "O", "", ""],
+			"player_1": player.id,
+			"player_2": null,
+			"turn": true,
+			"finished": false,
+			"winner": null
+        }
+        await collection.insertOne(board)
+    } catch (err) {
+        console.log(err)
+    } finally {
+        client.close()
+    }
+    return board
+}
+
+var make_move = async (move) => {
+    var board = await get_board(move.board)
+    var player = await players.get_player(move.player)
+    client = await connect()
+    if (!client) {
+        return board
+    }
+    try {
+        var letter = "X"
+        var moves = board.table_board
+        var index = parseInt(move.move, 10)
+        var space = moves[index]
+        if (board.player_2 == player.id){
+            letter = "O"
+        }
+        if (space == ""){
+            moves[index] = letter
+        }
+        update = {
+			"table_board": moves
+        }
+        const db = client.db(db_name)
+        let collection = db.collection(collection_name)
+        board = await collection.updateOne({id: board.id}, {$set: update})
+    } catch (err) {
+        console.log(err)
+    } finally {
+        client.close()
+    }
+    return board
 }
 
 
 module.exports = {
-    getBoards: getBoards,
-    getBoardById: getBoardById, 
-    createBoard: createBoard
+    get_boards: get_boards,
+    get_board: get_board, 
+    create_board: create_board,
+    make_move: make_move
 }
 

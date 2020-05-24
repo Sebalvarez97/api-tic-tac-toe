@@ -32,6 +32,26 @@ var create_player = async (player) => {
     return player
 }
 
+var get_player = async (id) => {
+    let player_id = parseInt(id, 10)
+    var player
+    client = await connect()
+    if (!client) {
+        return player
+    }
+    try {
+        const db = client.db(db_name)
+        let collection = db.collection(collection_name)
+        player = await collection.findOne({id: player_id})
+    } catch (err) {
+        console.log(err)
+    } finally {
+        client.close()
+    }
+    return player
+}
+
 module.exports = {
-    create_player: create_player
+    create_player: create_player, 
+    get_player: get_player
 }

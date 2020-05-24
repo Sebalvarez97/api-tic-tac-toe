@@ -4,7 +4,7 @@ var repository = require('../repository/players-repository');
 
 router.post('/',
     async (req, res) => {
-        console.log(req.body)
+        await repository.create_player(req.body)
         res.json({
             status: 201,
             message: "created",
@@ -14,14 +14,12 @@ router.post('/',
   )
   
   router.route('/:id').get(
-    (req, res) => {
+    async (req, res) => {
+        let player = await repository.get_player(req.params.id)
       res.json({
         status: 200,
         message: "success",
-        response: {
-            id: 01,
-            name: "Carlitos"
-        }
+        response: player
       });
     }
   )
