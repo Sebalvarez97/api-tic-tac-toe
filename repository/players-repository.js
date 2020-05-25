@@ -8,7 +8,7 @@ const collection_name = 'players'
 
 var connect = async () => {
     console.log('Connecting to database: ', uri)
-    return MongoClient.connect(uri, { useNewUrlParser: true })
+    return MongoClient.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .catch(err => {
         console.log('Connection error: ', err)
     })
@@ -25,7 +25,7 @@ var create_player = async (player) => {
         let collection = db.collection(collection_name)
         player = await collection.insertOne(player)
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }
@@ -43,8 +43,11 @@ var get_player = async (id) => {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
         player = await collection.findOne({id: player_id})
+        if (typeof player === 'undefined' && !player){
+            throw new NotFoundError(`Not Found by id ${id}`)
+        }
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }

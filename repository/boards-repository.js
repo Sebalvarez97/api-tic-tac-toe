@@ -1,6 +1,7 @@
 const MongoClient = require('mongodb').MongoClient;
 var players = require('./players-repository')
 var dotenv = require('dotenv');
+const {NotFoundError, BadRequestError, InternalError, ApiError} = require('../error/api-error')
 dotenv.config()
 
 const uri = process.env.DATABASE_URI
@@ -9,7 +10,7 @@ const collection_name = 'boards'
 
 var connect = async () => {
     console.log('Connecting to database: ', uri)
-    return MongoClient.connect(uri, { useNewUrlParser: true })
+    return MongoClient.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .catch(err => {
         console.log('Connection error: ', err)
     })
@@ -26,7 +27,7 @@ var get_boards = async () => {
         let collection = db.collection(collection_name)
         boards = await collection.find().toArray()
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }
@@ -44,8 +45,11 @@ var get_board = async (id) => {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
         board = await collection.findOne({id: board_id})
+        if (typeof board === 'undefined' && !board){
+            throw new NotFoundError(`Not Found by id ${id}`)
+        }
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }
@@ -73,7 +77,7 @@ var create_board = async (id) => {
         }
         await collection.insertOne(board)
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }
@@ -92,6 +96,9 @@ var make_move = async (move) => {
         var moves = board.table_board
         var index = parseInt(move.move, 10)
         var space = moves[index]
+        if (index < 0 || index > 9){
+            throw new BadRequestError('Bad Move, Not supported')
+        }
         if (board.player_2 == player.id){
             letter = "O"
         }
@@ -105,7 +112,7 @@ var make_move = async (move) => {
         let collection = db.collection(collection_name)
         board = await collection.updateOne({id: board.id}, {$set: update})
     } catch (err) {
-        console.log(err)
+        throw err
     } finally {
         client.close()
     }
