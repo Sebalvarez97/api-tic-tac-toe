@@ -44,7 +44,7 @@ var get_player = async (id) => {
         let collection = db.collection(collection_name)
         player = await collection.findOne({id: player_id})
         if (typeof player === 'undefined' && !player){
-            throw new NotFoundError(`Not Found by id ${id}`)
+            throw new NotFoundError(`Not Found player by id ${id}`)
         }
     } catch (err) {
         throw err
