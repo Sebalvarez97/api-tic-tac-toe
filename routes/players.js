@@ -2,25 +2,24 @@ var express = require('express');
 var router = express.Router();
 var repository = require('../repository/players-repository');
 
-router.post('/',
+router.get('/', 
     async (req, res) => {
         try {
-            await repository.create_player(req.body)
+            players = await repository.get_players()
             res.json({
-                status: 201,
-                message: "created",
-                response: req.body
-            });
+                status: 200,
+                message: "success",
+                response: players
+            });            
         } catch (error) {
             res.json({
                 status: error.code,
                 message: error.message 
               })
         }
-    }
-  )
-  
-  router.route('/:id').get(
+})
+
+router.get('/:id',
     async (req, res) => {
         try {
             let player = await repository.get_player(req.params.id)
@@ -34,6 +33,23 @@ router.post('/',
                 status: error.code,
                 message: error.message 
               })  
+        }
+    }
+)
+
+router.post('/:name',
+    async (req, res) => {
+        try {
+            await repository.create_player(req.params.name)
+            res.json({
+                status: 201,
+                message: "created"
+            });
+        } catch (error) {
+            res.json({
+                status: error.code,
+                message: error.message 
+              })
         }
     }
   )

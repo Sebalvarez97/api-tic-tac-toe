@@ -40,12 +40,10 @@ router.route('/:id').get(
 router.route('/:player').post(
   async (req, res) => {
     try {
-      let player = req.params.player
-      let board = await repository.create_board(player)
+      await repository.create_board(req.params.player)
       res.json({
         status: 201,
-        message: "created",
-        response: board
+        message: "created"
       });
     } catch (error) {
       res.json({
@@ -58,11 +56,10 @@ router.route('/:player').post(
 router.route('/move').put(
   async (req, res) => {
     try {
-      let board = await repository.make_move(req.body)
+      await repository.make_move(req.body)
       res.json({
         status: 200,
-        message: "moved",
-        response: board
+        message: "moved"
       });
     } catch (error) {
       res.json({

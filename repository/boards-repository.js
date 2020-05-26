@@ -1,11 +1,12 @@
 const MongoClient = require('mongodb').MongoClient;
+const mongo = require('mongodb')
 var players = require('./players-repository')
 var dotenv = require('dotenv');
 const {NotFoundError, BadRequestError, InternalError, ApiError} = require('../error/api-error')
 dotenv.config()
 
 const uri = process.env.DATABASE_URI
-const db_name = 'tic-tac-toe'
+const db_name = process.env.DATABASE_NAME
 const collection_name = 'boards'
 
 var connect = async () => {
@@ -26,8 +27,8 @@ var get_boards = async () => {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
         boards = await collection.find().toArray()
-    } catch (err) {
-        throw err
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
@@ -35,7 +36,6 @@ var get_boards = async () => {
 }
 
 var get_board = async (id) => {
-    let board_id = parseInt(id, 10)
     var board 
     client = await connect()
     if (!client) {
@@ -44,12 +44,12 @@ var get_board = async (id) => {
     try {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        board = await collection.findOne({id: board_id})
-        if (typeof board === 'undefined' && !board){
+        board = await collection.findOne({_id: new mongo.ObjectID(id)})
+        if (typeof board === 'undefined' || !board){
             throw new NotFoundError(`Not Found board by id ${id}`)
         }
-    } catch (err) {
-        throw err
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
@@ -57,31 +57,28 @@ var get_board = async (id) => {
 }
 
 var create_board = async (id) => {
-    var board
     var player = await players.get_player(id)
     client = await connect()
     if (!client) {
-        return board
+        return 
     }
     try {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
         board = {
-            "id": 01,
-			"table_board": ["", "", "X", "", "X", "", "O", "", ""],
-			"player_1": player.id,
-			"player_2": null,
+			"table_board": ["", "", "", "", "", "", "", "", ""],
+			"player_x": player._id,
+			"player_y": null,
 			"turn": true,
 			"finished": false,
 			"winner": null
         }
         await collection.insertOne(board)
-    } catch (err) {
-        throw err
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
-    return board
 }
 
 var make_move = async (move) => {
@@ -92,10 +89,10 @@ var make_move = async (move) => {
     var player = await players.get_player(move.player)
     client = await connect()
     if (!client) {
-        return board
+        return 
     }
     try {
-        if ((board.turn && (player.id != board.player_1)) || (!board.turn && (player.id != board.player_2))) {
+        if ((board.turn && (player._id == board.player_x)) || (!board.turn && (player._id == board.player_y))) {
             throw new BadRequestError("It isn't your turn, can't move")
         }
         var letter = board.turn ? "X" : "O"
@@ -107,42 +104,40 @@ var make_move = async (move) => {
             throw new BadRequestError('Bad Move, Not supported')
         }
         moves[index] = letter
-        var [finished, winner] = await check_winning(moves, board.player_1, board.player_2)
+        var winning_result = check_winning(moves, board.player_x, board.player_y)
         update = {
             "table_board": moves,
             "turn": !turn, 
-            "finished": finished,
-            "winner": winner
+            "finished": winning_result.finished,
+            "winner": winning_result.winner
         }
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        await collection.updateOne({id: board.id}, {$set: update})
+        await collection.updateOne({_id: board._id}, {$set: update})
         board = await get_board(move.board)
-        if (!board.player_2 && !finished){
+        if (!board.player_o && !board.finished && !board.turn){
             letter = "O"
-            var moves = board.table_board
-            var index = await get_machine_move(moves)
+            moves = board.table_board
+            index = get_machine_move(moves)
             moves[index] = letter
-            var turn = board.turn
-            var finished, winner = await check_winning(moves, board.player_1, board.player_2)
+            turn = board.turn
+            winning_result = check_winning(moves, board.player_x, board.player_y)
             update = {
                 "table_board": moves,
                 "turn": !turn, 
-                "finished": finished,
-                "winner": winner
+                "finished": winning_result.finished,
+                "winner": winning_result.winner
             }
-            await collection.updateOne({id: board.id}, {$set: update})
+            await collection.updateOne({_id: board._id}, {$set: update})
         }
-        board = await get_board(move.board)
-    } catch (err) {
-        throw err
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
-    return board
 }
 
-const get_machine_move = async (moves) => {
+const get_machine_move = (moves) => {
     var emptyes = []
     for (let index = 0; index < moves.length; index++) {
         const element = moves[index]
@@ -154,9 +149,9 @@ const get_machine_move = async (moves) => {
     return emptyes[random_index]
 }
 
-const check_winning = async (moves, player_x, player_o) => {
-    var finished = await check_board_complete(moves)
-    let res = await check_match(moves)
+const check_winning = (moves, player_x, player_o) => {
+    var finished = check_board_complete(moves)
+    let res = check_match(moves)
     let winner = null
     if (res == "X") {
         finished = true
@@ -165,10 +160,13 @@ const check_winning = async (moves, player_x, player_o) => {
         finished = true
         winner = player_o
     }
-    return [finished, winner]
+    return {
+        finished: finished,
+        winner: winner
+    }
 }
 
-const check_board_complete = async (moves) => {
+const check_board_complete = (moves) => {
     var flag = true;
     moves.forEach(element => {
         if (element != "X" && element != "O") {
@@ -176,14 +174,6 @@ const check_board_complete = async (moves) => {
         }
     });
     return flag
-}
-
-const check_line = async (moves, a, b, c) => {
-    return (
-        moves[a] == moves[b] &&
-        moves[b] == moves[c] &&
-        (moves[a] == moves || moves[a] == moves)
-    )
 }
 
 const check_match = (moves) => {
@@ -206,7 +196,13 @@ const check_match = (moves) => {
     return "";
 };
 
-
+const check_line = (moves, a, b, c) => {
+    return (
+        moves[a] == moves[b] &&
+        moves[b] == moves[c] &&
+        (moves[a] == "X" || moves[a] == "O")
+    )
+}
 
 module.exports = {
     get_boards: get_boards,

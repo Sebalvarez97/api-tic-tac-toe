@@ -1,5 +1,7 @@
 const MongoClient = require('mongodb').MongoClient;
+const mongo = require('mongodb')
 var dotenv = require('dotenv');
+const {NotFoundError, BadRequestError, InternalError, ApiError} = require('../error/api-error')
 dotenv.config()
 
 const uri = process.env.DATABASE_URI
@@ -14,7 +16,25 @@ var connect = async () => {
     })
 }
 
-var create_player = async (player) => {
+var get_players = async () => {
+    var players = []
+    client = await connect()
+    if (!client) {
+        return player
+    }
+    try {
+        const db = client.db(db_name)
+        let collection = db.collection(collection_name)
+        players = await collection.find({}).toArray()
+    } catch (error) {
+        throw error
+    } finally {
+        client.close()
+    }
+    return players
+}
+
+var get_player = async (id) => {
     var player
     client = await connect()
     if (!client) {
@@ -23,38 +43,42 @@ var create_player = async (player) => {
     try {
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        player = await collection.insertOne(player)
-    } catch (err) {
-        throw err
+        player = await collection.findOne({_id: new mongo.ObjectID(id)})
+        if (typeof player === 'undefined' || !player){
+            throw new NotFoundError(`Not Found player by id ${id}`)
+        }
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
     return player
 }
 
-var get_player = async (id) => {
-    let player_id = parseInt(id, 10)
-    var player
+var create_player = async (name) => {
+    if (!name && typeof name === 'string'){
+        throw new BadRequestError('Bad Request, invalid name')
+    }
     client = await connect()
     if (!client) {
-        return player
+        return 
     }
     try {
+        var player = {
+            "name": name
+        }
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        player = await collection.findOne({id: player_id})
-        if (typeof player === 'undefined' && !player){
-            throw new NotFoundError(`Not Found player by id ${id}`)
-        }
-    } catch (err) {
-        throw err
+        await collection.insertOne(player)
+    } catch (error) {
+        throw error
     } finally {
         client.close()
     }
-    return player
 }
 
 module.exports = {
     create_player: create_player, 
-    get_player: get_player
+    get_player: get_player,
+    get_players: get_players
 }
