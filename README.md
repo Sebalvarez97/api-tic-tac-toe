@@ -18,22 +18,27 @@ Port can be change in .env file
 
 ### GET 
 **{host}/players**
+
 Get all existents players
 
 ### POST 
 **{host}/players/{name}**
+
 Create a player by name
 
 ### GET
 **/boards**
+
 Get all existents boards
 
 ### POST
 **/boards/{player_id}**
+
 Creates a board with a player id
 
 ### PUT
 **/boards/move**
+
 Make a move in the board
 - body:
   {
