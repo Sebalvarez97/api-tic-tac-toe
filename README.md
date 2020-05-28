@@ -16,28 +16,23 @@ host: localhost = 127.0.0.1
 port: 9080
 Port can be change in .env file
 
-### GET 
-**{host}/players**
+### GET /players
 
 Get all existents players
 
-### POST 
-**{host}/players/{name}**
+### POST /players/{name}
 
 Create a player by name
 
-### GET
-**/boards**
+### GET /boards
 
 Get all existents boards
 
-### POST
-**/boards/{player_id}**
+### POST /boards/{player_id}
 
 Creates a board with a player id
 
-### PUT
-**/boards/move**
+### PUT /boards/move
 
 Make a move in the board
 - body:
