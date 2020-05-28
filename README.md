@@ -41,8 +41,9 @@ Creates a board with a player id
 
 Make a move in the board
 - body:
-  {
-    "board": {board_id},
-    "player": {player_id},
-    "move": {integer from 0 to 8}
-  }
+
+        {
+          "board": {board_id},
+          "player": {player_id},
+          "move": {integer from 0 to 8}
+        }
