@@ -2,7 +2,6 @@
 
 ## DATABASE with Docker
 > docker pull mongo
-
 > docker run -d -p 27017:27019-27017:27019 --name mongodboards mongo
 
 #### Mongo console
