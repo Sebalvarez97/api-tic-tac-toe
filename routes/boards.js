@@ -40,10 +40,11 @@ router.route('/:id').get(
 router.route('/:player').post(
   async (req, res) => {
     try {
-      await repository.create_board(req.params.player)
+      let result = await repository.create_board(req.params.player)
       res.json({
         status: 201,
-        message: "created"
+        message: "created",
+        response: result
       });
     } catch (error) {
       res.json({

@@ -73,7 +73,8 @@ var create_board = async (id) => {
 			"finished": false,
 			"winner": null
         }
-        await collection.insertOne(board)
+        let result = await collection.insertOne(board)
+        return result.ops[0]
     } catch (error) {
         throw error
     } finally {

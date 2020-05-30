@@ -69,7 +69,8 @@ var create_player = async (name) => {
         }
         const db = client.db(db_name)
         let collection = db.collection(collection_name)
-        await collection.insertOne(player)
+        let result = await collection.insertOne(player)
+        return result.ops[0]
     } catch (error) {
         throw error
     } finally {
